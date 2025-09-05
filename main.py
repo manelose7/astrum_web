@@ -103,6 +103,10 @@ async def list_keys_for_rayfield():
 @app.post("/activate")
 async def activate(request: Request):
     try:
+        # Получаем сырые данные для максимальной прозрачности
+        raw_data = await request.body()
+        print(f"🔍 RAW данные запроса: {raw_data}")
+
         data = await request.json()
         key = data.get("key", "").strip()  # Удаляем пробелы
         hwid = data.get("hwid", "").strip()
