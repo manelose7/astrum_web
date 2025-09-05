@@ -11,7 +11,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://astrum-web.vercel.app", "https://astrum-web.vercel.app/", "*"],
+    allow_origins=["https://astrum-web.vercel.app", "https://astrum-web.vercel.app/", "https://astrum-l6hqms9al-manelose7s-projects.vercel.app", "https://astrum-l6hqms9al-manelose7s-projects.vercel.app/", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
