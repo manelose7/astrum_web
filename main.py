@@ -9,27 +9,6 @@ import json
 
 app = FastAPI()
 
-vercel_url = os.environ.get("VERCEL_URL")
-allowed_origins = [
-    "https://astrum-web.vercel.app",
-    "https://astrum-web.vercel.app/",
-]
-
-if vercel_url:
-    # Добавляем URL текущего Vercel деплоймента (production или preview)
-    allowed_origins.append(f"https://{vercel_url}")
-    allowed_origins.append(f"https://{vercel_url}/")
-
-# Добавляем универсальный шаблон на всякий случай, хотя с динамическим должно быть лучше
-allowed_origins.append("*")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
