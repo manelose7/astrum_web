@@ -1,0 +1,51 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "script.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "keys.txt",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "hwid_bindings.json",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/generate-new-key",
+      "dest": "main.py"
+    },
+    {
+      "src": "/list-keys",
+      "dest": "main.py"
+    },
+    {
+      "src": "/activate",
+      "dest": "main.py"
+    },
+    {
+      "src": "/keys",
+      "dest": "main.py"
+    },
+    {
+      "src": "/script.js",
+      "dest": "script.js"
+    },
+    {
+      "src": "/",
+      "dest": "index.html"
+    }
+  ]
+}
