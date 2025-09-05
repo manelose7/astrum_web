@@ -88,12 +88,16 @@ async def list_keys_for_rayfield():
         
         if response.data:
             # Формируем список ключей как plain text
-            keys = [key['key_value'] for key in response.data]
+            keys = [key['key_value'] for key in response.data if not key.get('hwid')]
+            
+            print(f"🔑 Список доступных ключей: {keys}")
+            
             return PlainTextResponse("\n".join(keys))
         else:
+            print("❌ В базе нет доступных ключей")
             return PlainTextResponse("")
     except Exception as e:
-        print(f"Ошибка получения списка ключей: {e}")
+        print(f"❌ Ошибка получения списка ключей: {e}")
         return PlainTextResponse("")
 
 @app.post("/activate")
