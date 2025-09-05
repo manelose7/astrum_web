@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Astrum Key System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a1a;
+            --bg-secondary: #121228;
+            --accent-color: #4e8cff;
+            --text-color: #e0e0ff;
+            --border-color: #2a2a4a;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a3a 100%);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+        .container {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            box-shadow: 
+                0 15px 35px rgba(0,0,0,0.4), 
+                0 5px 15px rgba(0,0,0,0.3);
+            padding: 3em;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(10deg);
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, transparent, var(--accent-color), transparent);
+            z-index: -1;
+            filter: blur(40px);
+            opacity: 0.5;
+        }
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 1em;
+            color: var(--accent-color);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .key-display {
+            background: var(--bg-dark);
+            border: 2px dashed var(--border-color);
+            padding: 1em;
+            margin: 1.5em 0;
+            border-radius: 10px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 3px;
+            word-break: break-all;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .key-display.copied {
+            transform: scale(1.05);
+            background: rgba(78, 140, 255, 0.1);
+        }
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 20px rgba(78, 140, 255, 0.3);
+            transform: translateZ(20px);
+        }
+        .btn:hover {
+            background: #6aa4ff;
+            transform: translateZ(20px) scale(1.05);
+        }
+        .btn:active {
+            transform: translateZ(20px) scale(0.95);
+        }
+        .copy-btn {
+            margin-top: 1em;
+            background: transparent;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+        .copy-btn:hover {
+            background: rgba(78, 140, 255, 0.1);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Astrum Key Generator</h2>
+        <div id="key" class="key-display">Нажмите "Генерация" для получения ключа</div>
+        <button class="btn" id="generate-key-btn">Генерация ключа</button>
+        <button class="btn copy-btn" id="copy-key-btn" style="display:none;">Копировать ключ</button>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
