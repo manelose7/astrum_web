@@ -100,11 +100,14 @@ async def list_keys_for_rayfield():
 async def activate(request: Request):
     try:
         data = await request.json()
-        key = data.get("key")
-        hwid = data.get("hwid")
+        key = data.get("key", "").strip()  # Удаляем пробелы
+        hwid = data.get("hwid", "").strip()
         
-        print(f"🔑 Попытка активации: Key={key}, HWID={hwid}")
-        print(f"📋 Полные данные запроса: {data}")
+        print(f"🔑 Попытка активации:")
+        print(f"   Ключ (RAW): '{data.get('key')}'")
+        print(f"   Ключ (stripped): '{key}'")
+        print(f"   HWID (RAW): '{data.get('hwid')}'")
+        print(f"   HWID (stripped): '{hwid}'")
 
         if not key or not hwid:
             print("❌ Ошибка активации: Key или HWID отсутствуют.")
@@ -124,13 +127,19 @@ async def activate(request: Request):
         print(f"📊 Количество найденных записей: {response.count}")
         
         if not response.data or response.count == 0:
-            print(f"❌ Ошибка активации: Неверный ключ: {key}")
+            # Получаем список всех ключей для отладки
+            all_keys_response = supabase.from_("keys").select("key_value").execute()
+            all_keys = [item["key_value"] for item in all_keys_response.data or []]
+            
+            print(f"❌ Ошибка активации: Неверный ключ: '{key}'")
+            print(f"📋 Список всех ключей в базе: {all_keys}")
+            
             return JSONResponse(content={
                 "status": "error", 
                 "error": "Invalid key", 
                 "details": {
                     "key": key,
-                    "keys_in_db": [item['key_value'] for item in supabase.from_("keys").select("key_value").execute().data or []]
+                    "keys_in_db": all_keys
                 }
             }, status_code=404)
 
