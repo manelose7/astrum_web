@@ -1,4 +1,4 @@
-const baseReplitUrl = "https://34609f2d-8704-4f9c-bdff-92c018f52b1b-00-1wksftejb7gyb.spock.replit.dev"; // ВАШ БАЗОВЫЙ URL REPLIT БЕЗ ПОРТА
+const baseReplitUrl = "https://astrum-web.vercel.app/"; // ВАШ БАЗОВЫЙ URL REPLIT БЕЗ ПОРТА
 const keyDisplay = document.getElementById('key');
 const generateBtn = document.getElementById('generate-key-btn');
 const copyBtn = document.getElementById('copy-key-btn');
@@ -40,3 +40,4 @@ function copyKey() {
 
 generateBtn.addEventListener('click', getKey);
 copyBtn.addEventListener('click', copyKey);
+
