@@ -108,6 +108,7 @@ async def activate(request: Request):
         hwid = data.get("hwid", "").strip()
         
         print(f"🔑 Попытка активации:")
+        print(f"   Полные данные запроса: {data}")
         print(f"   Ключ (RAW): '{data.get('key')}'")
         print(f"   Ключ (stripped): '{key}'")
         print(f"   HWID (RAW): '{data.get('hwid')}'")
@@ -132,8 +133,11 @@ async def activate(request: Request):
         
         if not response.data or response.count == 0:
             # Получаем список всех ключей для отладки
-            all_keys_response = supabase.from_("keys").select("key_value").execute()
-            all_keys = [item["key_value"] for item in all_keys_response.data or []]
+            all_keys_response = supabase.from_("keys").select("key_value, hwid").execute()
+            all_keys = [
+                {"key": item["key_value"], "hwid": item.get("hwid", "Не привязан")} 
+                for item in all_keys_response.data or []
+            ]
             
             print(f"❌ Ошибка активации: Неверный ключ: '{key}'")
             print(f"📋 Список всех ключей в базе: {all_keys}")
