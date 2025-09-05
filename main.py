@@ -101,7 +101,7 @@ async def list_keys_for_rayfield():
         
         if response.data:
             # Формируем список ключей как plain text
-            keys = [key['key_value'] for key in response.data if not key.get('userid')]
+            keys = [key['key_value'] for key in response.data if not key.get('user_id')]
             
             logger.info(f"🔑 Список доступных ключей: {keys}")
             
@@ -122,23 +122,23 @@ async def activate(request: Request):
 
         data = await request.json()
         key = data.get("key", "").strip()  # Удаляем пробелы
-        userid = data.get("userid", "").strip()
+        user_id = data.get("user_id", "").strip()
         
         logger.info(f"🔑 Попытка активации:")
         logger.info(f"   Полные данные запроса: {data}")
         logger.info(f"   Ключ (RAW): '{data.get('key')}'")
         logger.info(f"   Ключ (stripped): '{key}'")
-        logger.info(f"   UserID (RAW): '{data.get('userid')}'")
-        logger.info(f"   UserID (stripped): '{userid}'")
+        logger.info(f"   User ID (RAW): '{data.get('user_id')}'")
+        logger.info(f"   User ID (stripped): '{user_id}'")
 
-        if not key or not userid:
-            logger.error("❌ Ошибка активации: Key или UserID отсутствуют.")
+        if not key or not user_id:
+            logger.error("❌ Ошибка активации: Key или User ID отсутствуют.")
             return JSONResponse(content={
                 "status": "error", 
-                "error": "key and userid required", 
+                "error": "key and user_id required", 
                 "details": {
                     "key_provided": bool(key),
-                    "userid_provided": bool(userid)
+                    "user_id_provided": bool(user_id)
                 }
             }, status_code=400)
         
@@ -150,9 +150,9 @@ async def activate(request: Request):
         
         if not response.data or response.count == 0:
             # Получаем список всех ключей для отладки
-            all_keys_response = supabase.from_("keys").select("key_value, userid").execute()
+            all_keys_response = supabase.from_("keys").select("key_value, user_id").execute()
             all_keys = [
-                {"key": item["key_value"], "userid": item.get("userid", "Не привязан")} 
+                {"key": item["key_value"], "user_id": item.get("user_id", "Не привязан")} 
                 for item in all_keys_response.data or []
             ]
             
@@ -171,53 +171,53 @@ async def activate(request: Request):
         key_data = response.data[0]
         logger.info(f"🔐 Данные ключа: {key_data}")
         
-        # Если ключ уже привязан к UserID
-        if key_data["userid"]:
-            if key_data["userid"] == userid:
-                logger.info(f"✅ Ключ {key} уже активирован с UserID {userid} (совпадение).")
+        # Если ключ уже привязан к User ID
+        if key_data["user_id"]:
+            if key_data["user_id"] == user_id:
+                logger.info(f"✅ Ключ {key} уже активирован с User ID {user_id} (совпадение).")
                 return JSONResponse(content={
                     "status": "ok", 
                     "msg": "Key already activated",
                     "details": {
                         "key": key,
-                        "userid": userid
+                        "user_id": user_id
                     }
                 })
             else:
-                logger.error(f"❌ Ключ {key} уже привязан к другому UserID: {key_data['userid']}. Текущий UserID: {userid}.")
+                logger.error(f"❌ Ключ {key} уже привязан к другому User ID: {key_data['user_id']}. Текущий User ID: {user_id}.")
                 return JSONResponse(content={
                     "status": "error", 
-                    "error": "Key already bound to another UserID",
+                    "error": "Key already bound to another User ID",
                     "details": {
                         "key": key,
-                        "original_userid": key_data['userid'],
-                        "current_userid": userid
+                        "original_user_id": key_data['user_id'],
+                        "current_user_id": user_id
                     }
                 }, status_code=403)
         
-        # Привязываем ключ к UserID
-        update_response = supabase.from_("keys").update({"userid": userid}).eq("key_value", key).execute()
+        # Привязываем ключ к User ID
+        update_response = supabase.from_("keys").update({"user_id": user_id}).eq("key_value", key).execute()
         
         logger.info(f"🔄 Результат обновления: {update_response}")
         
         if update_response.data:
-            logger.info(f"✅ Ключ {key} успешно активирован и привязан к UserID: {userid} в Supabase.")
+            logger.info(f"✅ Ключ {key} успешно активирован и привязан к User ID: {user_id} в Supabase.")
             return JSONResponse(content={
                 "status": "ok", 
                 "msg": "Key activated successfully",
                 "details": {
                     "key": key,
-                    "userid": userid
+                    "user_id": user_id
                 }
             })
         else:
-            logger.error(f"❌ Ошибка при привязке ключа к UserID в Supabase: {update_response.error}")
+            logger.error(f"❌ Ошибка при привязке ключа к User ID в Supabase: {update_response.error}")
             return JSONResponse(content={
                 "status": "error", 
                 "error": "Ошибка привязки ключа",
                 "details": {
                     "key": key,
-                    "userid": userid,
+                    "user_id": user_id,
                     "supabase_error": str(update_response.error)
                 }
             }, status_code=500)
@@ -237,9 +237,9 @@ def list_keys_info():
         all_keys_response = supabase.from_("keys").select("key_value").execute()
         all_keys = [item["key_value"] for item in all_keys_response.data] if all_keys_response.data else []
 
-        # Получаем активированные ключи (те, у которых userid не NULL)
-        activated_keys_response = supabase.from_("keys").select("key_value, userid").not_("userid", "is", None).execute()
-        activated_keys_details = {item["key_value"]: item["userid"] for item in activated_keys_response.data} if activated_keys_response.data else {}
+        # Получаем активированные ключи (те, у которых user_id не NULL)
+        activated_keys_response = supabase.from_("keys").select("key_value, user_id").not_("user_id", "is", None).execute()
+        activated_keys_details = {item["key_value"]: item["user_id"] for item in activated_keys_response.data} if activated_keys_response.data else {}
 
         logger.info(f"✅ Запрос /keys из Supabase: {len(all_keys)} ключей, {len(activated_keys_details)} привязок.")
         return JSONResponse(content={
