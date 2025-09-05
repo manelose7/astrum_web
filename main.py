@@ -104,40 +104,97 @@ async def activate(request: Request):
         hwid = data.get("hwid")
         
         print(f"🔑 Попытка активации: Key={key}, HWID={hwid}")
+        print(f"📋 Полные данные запроса: {data}")
 
         if not key or not hwid:
             print("❌ Ошибка активации: Key или HWID отсутствуют.")
-            return JSONResponse(content={"error": "key and hwid required"}, status_code=400)
+            return JSONResponse(content={
+                "status": "error", 
+                "error": "key and hwid required", 
+                "details": {
+                    "key_provided": bool(key),
+                    "hwid_provided": bool(hwid)
+                }
+            }, status_code=400)
         
         # Проверяем наличие ключа в Supabase
         response = supabase.from_("keys").select("*", count="exact").eq("key_value", key).execute()
+        
+        print(f"🔍 Результат поиска ключа: {response}")
+        print(f"📊 Количество найденных записей: {response.count}")
+        
         if not response.data or response.count == 0:
             print(f"❌ Ошибка активации: Неверный ключ: {key}")
-            return JSONResponse(content={"error": "Invalid key"}, status_code=404)
+            return JSONResponse(content={
+                "status": "error", 
+                "error": "Invalid key", 
+                "details": {
+                    "key": key,
+                    "keys_in_db": [item['key_value'] for item in supabase.from_("keys").select("key_value").execute().data or []]
+                }
+            }, status_code=404)
 
         key_data = response.data[0]
+        print(f"🔐 Данные ключа: {key_data}")
         
         # Если ключ уже привязан к HWID
         if key_data["hwid"]:
             if key_data["hwid"] == hwid:
                 print(f"✅ Ключ {key} уже активирован с HWID {hwid} (совпадение).")
-                return JSONResponse(content={"status": "ok", "msg": "Key already activated"})
+                return JSONResponse(content={
+                    "status": "ok", 
+                    "msg": "Key already activated",
+                    "details": {
+                        "key": key,
+                        "hwid": hwid
+                    }
+                })
             else:
                 print(f"❌ Ключ {key} уже привязан к другому HWID: {key_data['hwid']}. Текущий HWID: {hwid}.")
-                return JSONResponse(content={"error": "Key already bound to another HWID"}, status_code=403)
+                return JSONResponse(content={
+                    "status": "error", 
+                    "error": "Key already bound to another HWID",
+                    "details": {
+                        "key": key,
+                        "original_hwid": key_data['hwid'],
+                        "current_hwid": hwid
+                    }
+                }, status_code=403)
         
         # Привязываем ключ к HWID
         update_response = supabase.from_("keys").update({"hwid": hwid}).eq("key_value", key).execute()
+        
+        print(f"🔄 Результат обновления: {update_response}")
+        
         if update_response.data:
             print(f"✅ Ключ {key} успешно активирован и привязан к HWID: {hwid} в Supabase.")
-            return JSONResponse(content={"status": "ok", "msg": "Key activated successfully"})
+            return JSONResponse(content={
+                "status": "ok", 
+                "msg": "Key activated successfully",
+                "details": {
+                    "key": key,
+                    "hwid": hwid
+                }
+            })
         else:
             print(f"❌ Ошибка при привязке ключа к HWID в Supabase: {update_response.error}")
-            return JSONResponse(content={"error": "Ошибка привязки ключа"}, status_code=500)
+            return JSONResponse(content={
+                "status": "error", 
+                "error": "Ошибка привязки ключа",
+                "details": {
+                    "key": key,
+                    "hwid": hwid,
+                    "supabase_error": str(update_response.error)
+                }
+            }, status_code=500)
 
     except Exception as e:
         print(f"❌ Критическая ошибка в /activate: {e}")
-        return JSONResponse(content={"error": "Внутренняя ошибка сервера"}, status_code=500)
+        return JSONResponse(content={
+            "status": "error", 
+            "error": "Внутренняя ошибка сервера",
+            "details": str(e)
+        }, status_code=500)
 
 @app.get("/keys")
 def list_keys_info():
