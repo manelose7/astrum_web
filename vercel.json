@@ -64,10 +64,5 @@
     "main.py": {
       "maxDuration": 30
     }
-  },
-  "logging": {
-    "debug": true,
-    "httpLogs": true,
-    "serverLogs": true
   }
 }
