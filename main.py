@@ -83,18 +83,18 @@ async def generate_new_key():
 @app.get("/list-keys")
 async def list_keys_for_rayfield():
     try:
-        # Запрашиваем все ключи из Supabase
-        response = supabase.from_("keys").select("key_value").execute()
+        # Получаем все ключи из базы данных
+        response = supabase.table("keys").select("key_value").execute()
+        
         if response.data:
-            all_keys = [item["key_value"] for item in response.data]
-            print(f"✅ Отправлен список ключей для Rayfield из Supabase. Количество: {len(all_keys)}")
-            return PlainTextResponse(content="\n".join(all_keys))
+            # Формируем список ключей как plain text
+            keys = [key['key_value'] for key in response.data]
+            return PlainTextResponse("\n".join(keys))
         else:
-            print(f"❌ Ошибка при получении списка ключей из Supabase: {response.error}")
-            return JSONResponse(content={"error": "Ошибка получения списка ключей"}, status_code=500)
+            return PlainTextResponse("")
     except Exception as e:
-        print(f"❌ Ошибка при отправке списка ключей Rayfield: {e}")
-        return JSONResponse(content={"error": "Ошибка получения списка ключей"}, status_code=500)
+        print(f"Ошибка получения списка ключей: {e}")
+        return PlainTextResponse("")
 
 @app.post("/activate")
 async def activate(request: Request):
