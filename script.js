@@ -1,5 +1,5 @@
 const baseReplitUrl = "https://astrum-web.vercel.app"; // ВАШ БАЗОВЫЙ URL REPLIT БЕЗ ПОРТА
-const apiUrl = `${baseReplitUrl}/api`; // Добавляем /api для Vercel Serverless Functions
+const apiUrl = `${baseReplitUrl}`; // Убран /api для Vercel Serverless Functions
 const keyDisplay = document.getElementById('key');
 const generateBtn = document.getElementById('generate-key-btn');
 const copyBtn = document.getElementById('copy-key-btn');
