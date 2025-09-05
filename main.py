@@ -1,4 +1,5 @@
 import os
+import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse
@@ -6,6 +7,17 @@ from uuid import uuid4
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 import json
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Вывод в консоль
+        logging.FileHandler('app.log', encoding='utf-8')  # Логи в файл
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -21,6 +33,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+    logger.error("SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables")
     raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -58,10 +71,10 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 @app.get("/")
 def root():
     try:
-        print("✅ Запрос к корневому эндпоинту (/): Попытка отдать index.html")
+        logger.info("✅ Запрос к корневому эндпоинту (/): Попытка отдать index.html")
         return FileResponse("index.html")
     except Exception as e:
-        print(f"❌ Критическая ошибка при отдаче index.html: {e}")
+        logger.error(f"❌ Критическая ошибка при отдаче index.html: {e}")
         return JSONResponse(content={"error": "Не удалось загрузить страницу"}, status_code=500)
 
 @app.get("/generate-new-key")
@@ -71,13 +84,13 @@ async def generate_new_key():
         # Вставляем новый ключ в Supabase
         response = supabase.from_("keys").insert({"key_value": new_key}).execute()
         if response.data:
-            print(f"✅ Сгенерирован и добавлен новый ключ в Supabase: {new_key}")
+            logger.info(f"✅ Сгенерирован и добавлен новый ключ в Supabase: {new_key}")
             return PlainTextResponse(content=new_key)
         else:
-            print(f"❌ Ошибка при вставке ключа в Supabase: {response.error}")
+            logger.error(f"❌ Ошибка при вставке ключа в Supabase: {response.error}")
             return JSONResponse(content={"error": "Ошибка генерации ключа"}, status_code=500)
     except Exception as e:
-        print(f"❌ Критическая ошибка в /generate-new-key: {e}")
+        logger.error(f"❌ Критическая ошибка в /generate-new-key: {e}")
         return JSONResponse(content={"error": "Ошибка генерации ключа"}, status_code=500)
 
 @app.get("/list-keys")
@@ -88,16 +101,16 @@ async def list_keys_for_rayfield():
         
         if response.data:
             # Формируем список ключей как plain text
-            keys = [key['key_value'] for key in response.data if not key.get('hwid')]
+            keys = [key['key_value'] for key in response.data if not key.get('userid')]
             
-            print(f"🔑 Список доступных ключей: {keys}")
+            logger.info(f"🔑 Список доступных ключей: {keys}")
             
             return PlainTextResponse("\n".join(keys))
         else:
-            print("❌ В базе нет доступных ключей")
+            logger.warning("❌ В базе нет доступных ключей")
             return PlainTextResponse("")
     except Exception as e:
-        print(f"❌ Ошибка получения списка ключей: {e}")
+        logger.error(f"❌ Ошибка получения списка ключей: {e}")
         return PlainTextResponse("")
 
 @app.post("/activate")
@@ -105,46 +118,46 @@ async def activate(request: Request):
     try:
         # Получаем сырые данные для максимальной прозрачности
         raw_data = await request.body()
-        print(f"🔍 RAW данные запроса: {raw_data}")
+        logger.info(f"🔍 RAW данные запроса: {raw_data}")
 
         data = await request.json()
         key = data.get("key", "").strip()  # Удаляем пробелы
-        hwid = data.get("hwid", "").strip()
+        userid = data.get("userid", "").strip()
         
-        print(f"🔑 Попытка активации:")
-        print(f"   Полные данные запроса: {data}")
-        print(f"   Ключ (RAW): '{data.get('key')}'")
-        print(f"   Ключ (stripped): '{key}'")
-        print(f"   HWID (RAW): '{data.get('hwid')}'")
-        print(f"   HWID (stripped): '{hwid}'")
+        logger.info(f"🔑 Попытка активации:")
+        logger.info(f"   Полные данные запроса: {data}")
+        logger.info(f"   Ключ (RAW): '{data.get('key')}'")
+        logger.info(f"   Ключ (stripped): '{key}'")
+        logger.info(f"   UserID (RAW): '{data.get('userid')}'")
+        logger.info(f"   UserID (stripped): '{userid}'")
 
-        if not key or not hwid:
-            print("❌ Ошибка активации: Key или HWID отсутствуют.")
+        if not key or not userid:
+            logger.error("❌ Ошибка активации: Key или UserID отсутствуют.")
             return JSONResponse(content={
                 "status": "error", 
-                "error": "key and hwid required", 
+                "error": "key and userid required", 
                 "details": {
                     "key_provided": bool(key),
-                    "hwid_provided": bool(hwid)
+                    "userid_provided": bool(userid)
                 }
             }, status_code=400)
         
         # Проверяем наличие ключа в Supabase
         response = supabase.from_("keys").select("*", count="exact").eq("key_value", key).execute()
         
-        print(f"🔍 Результат поиска ключа: {response}")
-        print(f"📊 Количество найденных записей: {response.count}")
+        logger.info(f"🔍 Результат поиска ключа: {response}")
+        logger.info(f"📊 Количество найденных записей: {response.count}")
         
         if not response.data or response.count == 0:
             # Получаем список всех ключей для отладки
-            all_keys_response = supabase.from_("keys").select("key_value, hwid").execute()
+            all_keys_response = supabase.from_("keys").select("key_value, userid").execute()
             all_keys = [
-                {"key": item["key_value"], "hwid": item.get("hwid", "Не привязан")} 
+                {"key": item["key_value"], "userid": item.get("userid", "Не привязан")} 
                 for item in all_keys_response.data or []
             ]
             
-            print(f"❌ Ошибка активации: Неверный ключ: '{key}'")
-            print(f"📋 Список всех ключей в базе: {all_keys}")
+            logger.error(f"❌ Ошибка активации: Неверный ключ: '{key}'")
+            logger.info(f"📋 Список всех ключей в базе: {all_keys}")
             
             return JSONResponse(content={
                 "status": "error", 
@@ -156,61 +169,61 @@ async def activate(request: Request):
             }, status_code=404)
 
         key_data = response.data[0]
-        print(f"🔐 Данные ключа: {key_data}")
+        logger.info(f"🔐 Данные ключа: {key_data}")
         
-        # Если ключ уже привязан к HWID
-        if key_data["hwid"]:
-            if key_data["hwid"] == hwid:
-                print(f"✅ Ключ {key} уже активирован с HWID {hwid} (совпадение).")
+        # Если ключ уже привязан к UserID
+        if key_data["userid"]:
+            if key_data["userid"] == userid:
+                logger.info(f"✅ Ключ {key} уже активирован с UserID {userid} (совпадение).")
                 return JSONResponse(content={
                     "status": "ok", 
                     "msg": "Key already activated",
                     "details": {
                         "key": key,
-                        "hwid": hwid
+                        "userid": userid
                     }
                 })
             else:
-                print(f"❌ Ключ {key} уже привязан к другому HWID: {key_data['hwid']}. Текущий HWID: {hwid}.")
+                logger.error(f"❌ Ключ {key} уже привязан к другому UserID: {key_data['userid']}. Текущий UserID: {userid}.")
                 return JSONResponse(content={
                     "status": "error", 
-                    "error": "Key already bound to another HWID",
+                    "error": "Key already bound to another UserID",
                     "details": {
                         "key": key,
-                        "original_hwid": key_data['hwid'],
-                        "current_hwid": hwid
+                        "original_userid": key_data['userid'],
+                        "current_userid": userid
                     }
                 }, status_code=403)
         
-        # Привязываем ключ к HWID
-        update_response = supabase.from_("keys").update({"hwid": hwid}).eq("key_value", key).execute()
+        # Привязываем ключ к UserID
+        update_response = supabase.from_("keys").update({"userid": userid}).eq("key_value", key).execute()
         
-        print(f"🔄 Результат обновления: {update_response}")
+        logger.info(f"🔄 Результат обновления: {update_response}")
         
         if update_response.data:
-            print(f"✅ Ключ {key} успешно активирован и привязан к HWID: {hwid} в Supabase.")
+            logger.info(f"✅ Ключ {key} успешно активирован и привязан к UserID: {userid} в Supabase.")
             return JSONResponse(content={
                 "status": "ok", 
                 "msg": "Key activated successfully",
                 "details": {
                     "key": key,
-                    "hwid": hwid
+                    "userid": userid
                 }
             })
         else:
-            print(f"❌ Ошибка при привязке ключа к HWID в Supabase: {update_response.error}")
+            logger.error(f"❌ Ошибка при привязке ключа к UserID в Supabase: {update_response.error}")
             return JSONResponse(content={
                 "status": "error", 
                 "error": "Ошибка привязки ключа",
                 "details": {
                     "key": key,
-                    "hwid": hwid,
+                    "userid": userid,
                     "supabase_error": str(update_response.error)
                 }
             }, status_code=500)
 
     except Exception as e:
-        print(f"❌ Критическая ошибка в /activate: {e}")
+        logger.error(f"❌ Критическая ошибка в /activate: {e}")
         return JSONResponse(content={
             "status": "error", 
             "error": "Внутренняя ошибка сервера",
@@ -224,16 +237,16 @@ def list_keys_info():
         all_keys_response = supabase.from_("keys").select("key_value").execute()
         all_keys = [item["key_value"] for item in all_keys_response.data] if all_keys_response.data else []
 
-        # Получаем активированные ключи (те, у которых hwid не NULL)
-        activated_keys_response = supabase.from_("keys").select("key_value, hwid").not_("hwid", "is", None).execute()
-        activated_keys_details = {item["key_value"]: item["hwid"] for item in activated_keys_response.data} if activated_keys_response.data else {}
+        # Получаем активированные ключи (те, у которых userid не NULL)
+        activated_keys_response = supabase.from_("keys").select("key_value, userid").not_("userid", "is", None).execute()
+        activated_keys_details = {item["key_value"]: item["userid"] for item in activated_keys_response.data} if activated_keys_response.data else {}
 
-        print(f"✅ Запрос /keys из Supabase: {len(all_keys)} ключей, {len(activated_keys_details)} привязок.")
+        logger.info(f"✅ Запрос /keys из Supabase: {len(all_keys)} ключей, {len(activated_keys_details)} привязок.")
         return JSONResponse(content={
             "total_keys_in_db": len(all_keys),
             "activated_keys_count": len(activated_keys_details),
             "activated_keys_details": activated_keys_details
         })
     except Exception as e:
-        print(f"❌ Критическая ошибка в /keys: {e}")
+        logger.error(f"❌ Критическая ошибка в /keys: {e}")
         return JSONResponse(content={"error": "Внутренняя ошибка сервера"}, status_code=500)
